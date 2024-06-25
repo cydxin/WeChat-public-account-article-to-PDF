@@ -94,7 +94,7 @@ func slowScrollToBottomctx(ctx context.Context) {
 		sleepDuration := time.Duration(lengthInt/300*100) * time.Millisecond
 		fmt.Println("翻页时间：", sleepDuration)
 		time.Sleep(sleepDuration)
-
+		//无效代码 纯闲得 看看滚动条位置
 		topInt := 0
 		err = chromedp.Run(ctx,
 			chromedp.Evaluate(`element.scrollTop`, &topInt),
