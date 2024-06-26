@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -21,33 +20,42 @@ func main() {
 	}
 	list := strings.Split(string(listByte), "\n")
 	fmt.Println("共", len(list), "个")
-	var wg sync.WaitGroup
-	for _, s := range list {
-		wg.Add(1)
-		go func(s string) {
-			// create context
-			url := strings.TrimPrefix(s, "")
-			ctx, cancel := chromedp.NewContext(context.Background())
-			defer cancel()
-			ctx, cancelTimeout := context.WithTimeout(ctx, 30*time.Second)
-			defer cancelTimeout()
-			// capture pdf
-			var buf []byte
-			if err := chromedp.Run(ctx, printToPDF(
-				url,
-				&buf, &title)); err != nil {
-				log.Fatal(err)
-			}
-
-			if err := os.WriteFile(title+".pdf", buf, 0o644); err != nil {
-				log.Fatal(err)
-			}
-			fmt.Println("wrote ", title, ".pdf")
-			wg.Done()
-		}(s)
+	//var wg sync.WaitGroup
+	for i, s := range list {
+		//wg.Add(1) The filename, directory name, or volume label syntax is incorrect.
+		//go func(s string) {
+		// create context
+		url := strings.TrimPrefix(s, "")
+		ctx, cancel := chromedp.NewContext(context.Background())
+		ctx, cancelTimeout := context.WithTimeout(ctx, 30*time.Second)
+		// capture pdf
+		fmt.Println("第", i, "个")
+		var buf []byte
+		if err := chromedp.Run(ctx, printToPDF(
+			url,
+			&buf, &title)); err != nil {
+			log.Fatal(err)
+		}
+		title = strings.ReplaceAll(title, "/", "-")
+		title = strings.ReplaceAll(title, ":", "：")
+		title = strings.ReplaceAll(title, "*", "-")
+		title = strings.ReplaceAll(title, "?", "？")
+		title = strings.ReplaceAll(title, `"`, "'")
+		title = strings.ReplaceAll(title, "<", "《")
+		title = strings.ReplaceAll(title, ">", "》")
+		if err := os.WriteFile(title+".pdf", buf, 0o644); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("写入 ", title, ".pdf")
+		ctx.Done()
+		cancel()
+		cancelTimeout()
+		//wg.Done()
+		//}(s)
 	}
-	wg.Wait()
+	//wg.Wait()
 	fmt.Println("宝，结束辣")
+	time.Sleep(50 * time.Second)
 }
 
 // slowScrollToBottom 缓慢滚动到页面底部的操作
